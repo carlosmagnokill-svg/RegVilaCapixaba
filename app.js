@@ -253,12 +253,21 @@ function render(){
 }
 
 
-async function exportDashboardPDF(){
+window.exportDashboardPDF = async function exportDashboardPDF(){
   const button = $('downloadPdfBtn');
+  if(!button) return;
+
   const originalLabel = button.innerHTML;
   try{
     button.disabled = true;
     button.innerHTML = '<span>⌛</span> Gerando PDF';
+
+    if(typeof html2canvas === 'undefined' || !window.jspdf?.jsPDF){
+      console.warn('Bibliotecas de PDF indisponíveis. Abrindo impressão do navegador como alternativa.');
+      button.innerHTML = '<span>⌛</span> Abrindo impressão';
+      setTimeout(() => window.print(), 100);
+      return;
+    }
     document.body.classList.add('pdf-exporting');
 
     // Aguarda a estabilização dos gráficos e das fontes antes da captura.
@@ -337,7 +346,6 @@ async function init(){
     if(!FREQ_DATA.length) throw new Error('A base de frequência foi carregada, mas nenhuma linha válida foi encontrada.');
     bootstrapFilters();
     render();
-    $('downloadPdfBtn').addEventListener('click', exportDashboardPDF);
   }catch(error){
     showLoadError(error);
   }

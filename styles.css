@@ -154,3 +154,34 @@ body.pdf-exporting .footer{
   .download-pdf-btn span{font-size:18px}
   .update-actions{gap:8px}
 }
+
+
+@page{
+  size:A4 landscape;
+  margin:4mm;
+}
+@media print{
+  html,body{
+    width:100%;
+    min-height:auto;
+    background:#fff!important;
+    print-color-adjust:exact;
+    -webkit-print-color-adjust:exact;
+  }
+  body{padding-bottom:0!important}
+  .download-pdf-btn{display:none!important}
+  .footer{
+    position:relative!important;
+    left:auto!important;
+    right:auto!important;
+    bottom:auto!important;
+    width:100%!important;
+    margin-top:0!important;
+  }
+  .dashboard-shell{
+    padding:7px 12px 6px!important;
+  }
+  .topbar{
+    min-height:70px!important;
+  }
+}
