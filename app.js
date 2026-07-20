@@ -208,13 +208,104 @@ function renderWeekly(rows){
 }
 
 function renderLow(rows){
-  const byChurch=new Map();
-  rows.forEach(r=>{if(!byChurch.has(r.church))byChurch.set(r.church,[]);byChurch.get(r.church).push(r)});
-  const low=[...byChurch.entries()].map(([church,v])=>({church,rate:weightedRate(v)})).filter(x=>x.rate<50).sort((a,b)=>a.rate-b.rate).slice(0,12);
-  $('emptyState').hidden=low.length>0;$('lowChart').style.display=low.length?'block':'none';
+  const byChurch = new Map();
+
+  rows.forEach(r=>{
+    const key = [r.area, r.polo, r.church].join('|||');
+    if(!byChurch.has(key)) byChurch.set(key, []);
+    byChurch.get(key).push(r);
+  });
+
+  const allLow = [...byChurch.entries()]
+    .map(([key, values])=>{
+      const [area, polo, church] = key.split('|||');
+      return { area, polo, church, rate: weightedRate(values) };
+    })
+    .filter(x=>x.rate < 50)
+    .sort((a,b)=>a.rate-b.rate || a.church.localeCompare(b.church,'pt-BR'));
+
+  const chartLow = allLow.slice(0,25);
+
+  $('emptyState').hidden = chartLow.length > 0;
+  $('lowChart').style.display = chartLow.length ? 'block' : 'none';
+
   destroy('low');
-  if(!low.length)return;
-  charts.low=new Chart($('lowChart'),{type:'bar',plugins:[labelPlugin],data:{labels:low.map(x=>x.church),datasets:[{data:low.map(x=>x.rate),backgroundColor:'#d90916',barPercentage:.42,categoryPercentage:.78}]},options:{responsive:true,maintainAspectRatio:false,layout:{padding:{top:15}},scales:{y:{beginAtZero:true,max:60,grid:{color:'#e7e9ed',borderDash:[2,3]},ticks:{font:{size:8},callback:v=>v+'%'}},x:{grid:{display:false},ticks:{font:{size:8},maxRotation:0,minRotation:0,callback:function(v){const l=this.getLabelForValue(v);return l.length>18?l.slice(0,17)+'…':l}}}},plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>pt2.format(c.raw)+'%'}}}}});
+
+  if(chartLow.length){
+    charts.low = new Chart($('lowChart'),{
+      type:'bar',
+      plugins:[labelPlugin],
+      data:{
+        labels:chartLow.map(x=>x.church),
+        datasets:[{
+          data:chartLow.map(x=>x.rate),
+          backgroundColor:'#d90916',
+          barPercentage:.54,
+          categoryPercentage:.82
+        }]
+      },
+      options:{
+        responsive:true,
+        maintainAspectRatio:false,
+        layout:{padding:{top:15}},
+        scales:{
+          y:{
+            beginAtZero:true,
+            max:60,
+            grid:{color:'#e7e9ed',borderDash:[2,3]},
+            ticks:{font:{size:8},callback:v=>v+'%'}
+          },
+          x:{
+            grid:{display:false},
+            ticks:{
+              font:{size:8},
+              maxRotation:45,
+              minRotation:45,
+              autoSkip:false,
+              callback:function(v){
+                const l=this.getLabelForValue(v);
+                return l.length>18 ? l.slice(0,17)+'…' : l;
+              }
+            }
+          }
+        },
+        plugins:{
+          legend:{display:false},
+          tooltip:{
+            callbacks:{
+              title:items=>chartLow[items[0].dataIndex].church,
+              label:c=>[
+                `Frequência: ${pt2.format(c.raw)}%`,
+                `Área: ${chartLow[c.dataIndex].area}`,
+                `Pólo: ${chartLow[c.dataIndex].polo}`
+              ]
+            }
+          }
+        }
+      }
+    });
+  }
+
+  renderLowFrequencyTable(allLow);
+}
+
+function renderLowFrequencyTable(rows){
+  const tbody = $('lowFrequencyTableBody');
+  const empty = $('emptyTableState');
+
+  tbody.innerHTML = '';
+  empty.hidden = rows.length > 0;
+
+  rows.forEach(item=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${item.area}</td>
+      <td>${item.polo}</td>
+      <td>${item.church}</td>
+      <td class="frequency-cell">${pt2.format(item.rate)}%</td>
+    `;
+    tbody.appendChild(tr);
+  });
 }
 
 function render(){

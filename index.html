@@ -7,7 +7,7 @@
   <title>Estatística Frequência de EBD</title>
   <link rel="preconnect" href="https://cdn.jsdelivr.net" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
-  <link rel="stylesheet" href="styles.css?v=1784556471" />
+  <link rel="stylesheet" href="styles.css?v=1784564246" />
 </head>
 <body>
   <header class="topbar">
@@ -109,6 +109,32 @@
       <div class="low-chart-box"><canvas id="lowChart"></canvas></div>
       <div class="empty-state" id="emptyState" hidden>Nenhuma igreja abaixo de 50% no recorte selecionado.</div>
     </section>
+
+    <section class="panel low-table-panel">
+      <div class="panel-heading">
+        <div>
+          <h2>LISTA COMPLETA DE IGREJAS ABAIXO DE 50% DE FREQUÊNCIA</h2>
+          <p>Detalhamento consolidado conforme os filtros selecionados.</p>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table class="low-frequency-table">
+          <thead>
+            <tr>
+              <th>ÁREA</th>
+              <th>PÓLO</th>
+              <th>IGREJA</th>
+              <th>FREQUÊNCIA</th>
+            </tr>
+          </thead>
+          <tbody id="lowFrequencyTableBody"></tbody>
+        </table>
+        <div class="empty-table-state" id="emptyTableState" hidden>
+          Nenhuma igreja abaixo de 50% no recorte selecionado.
+        </div>
+      </div>
+    </section>
   </main>
 
   <footer class="footer">
@@ -120,6 +146,6 @@
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
-  <script src="./app.js?v=1784556471"></script>
+  <script src="./app.js?v=1784564246"></script>
 </body>
 </html>
