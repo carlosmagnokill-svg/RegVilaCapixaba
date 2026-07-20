@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Dashboard executivo de frequência da EBD" />
+  <title>Estatística Frequência de EBD</title>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand-block">
+      <div class="pin-mark" aria-hidden="true">●</div>
+      <div>
+        <div class="region-title">REGIÃO <span>VILA CAPIXABA</span></div>
+        <div class="region-subtitle">Áreas: Cariacica Sede | Itacibá | Porto de Santana | Santa Maria de Jetibá | Vila Capixaba</div>
+      </div>
+    </div>
+    <div class="title-block">
+      <img src="./logo_ICM_BRANCO.png" alt="Logo ICM" class="icm-logo" />
+      <h1>ESTATÍSTICA FREQUÊNCIA DE EBD</h1>
+    </div>
+    <div class="update-block">
+      <span class="calendar-icon">▣</span>
+      <div><small>Atualização</small><strong id="headerUpdate">--/--/----</strong></div>
+    </div>
+  </header>
+
+  <main class="dashboard-shell">
+    <section class="filters" aria-label="Filtros do dashboard">
+      <label class="filter-card">
+        <span class="filter-icon">▦</span>
+        <span class="filter-copy"><small>Ano</small><select id="yearFilter"></select></span>
+      </label>
+      <label class="filter-card">
+        <span class="filter-icon">▦</span>
+        <span class="filter-copy"><small>Mês</small><select id="monthFilter"></select></span>
+      </label>
+      <label class="filter-card">
+        <span class="filter-icon">⌖</span>
+        <span class="filter-copy"><small>Área</small><select id="areaFilter"></select></span>
+      </label>
+      <label class="filter-card">
+        <span class="filter-icon">♙</span>
+        <span class="filter-copy"><small>Pólo</small><select id="poloFilter"></select></span>
+      </label>
+      <label class="filter-card filter-wide">
+        <span class="filter-icon">⌂</span>
+        <span class="filter-copy"><small>Igreja</small><select id="churchFilter"></select></span>
+      </label>
+    </section>
+
+    <section class="summary-grid">
+      <article class="gauge-card panel">
+        <h2>MÉDIA GERAL FREQUÊNCIA</h2>
+        <div class="gauge-wrap">
+          <canvas id="gaugeChart"></canvas>
+          <div class="gauge-value" id="overallFrequency">0,0%</div>
+          <span class="gauge-min">0%</span><span class="gauge-max">100%</span>
+        </div>
+      </article>
+
+      <div class="kpi-grid">
+        <article class="kpi burgundy"><span><small>Áreas</small><strong id="kpiAreas">0</strong></span><b>⌖</b></article>
+        <article class="kpi burgundy"><span><small>Igrejas</small><strong id="kpiChurches">0</strong></span><b>♜</b></article>
+        <article class="kpi yellow"><span><small>Batismos 2025</small><strong id="kpiB25">0</strong></span><b>◉</b></article>
+        <article class="kpi yellow"><span><small>Batismos 2026</small><strong id="kpiB26">0</strong></span><b>◉</b></article>
+        <article class="kpi burgundy"><span><small>EBD's Registradas</small><strong id="kpiEbd">0</strong></span><b>▤</b></article>
+        <article class="kpi burgundy"><span><small>Pólos</small><strong id="kpiPoles">0</strong></span><b>♟</b></article>
+        <article class="kpi burgundy"><span><small>Memb. Total</small><strong id="kpiMembers">0</strong></span><b>♟</b></article>
+        <article class="kpi yellow"><span><small>Crescimento Batismos</small><strong id="kpiGrowth">0,00%</strong></span><b>↘</b></article>
+        <article class="kpi yellow"><span><small>Ritmo Crescimento</small><strong id="kpiPace">0,00%</strong></span><b>◴</b></article>
+        <article class="kpi burgundy"><span><small>Última Atualização</small><strong id="kpiUpdate">--/--/--</strong></span><b>▦</b></article>
+      </div>
+    </section>
+
+    <section class="analysis-row">
+      <aside class="narrative-card">
+        <h2>PARTICIPAÇÃO<br>EBD</h2>
+        <div class="gold-line"></div>
+        <div class="circle-icon">♟</div>
+        <p>Acompanhe os índices de participação de membros na EBD.</p>
+      </aside>
+      <article class="panel chart-panel">
+        <h2>MÉDIA PERCENTUAL MENSAL</h2>
+        <div class="chart-box"><canvas id="monthlyChart"></canvas></div>
+      </article>
+      <article class="panel chart-panel">
+        <h2>MÉDIA PERCENTUAL POR EBD</h2>
+        <div class="chart-box"><canvas id="weeklyChart"></canvas></div>
+      </article>
+    </section>
+
+    <section class="panel low-panel">
+      <div class="panel-heading">
+        <div>
+          <h2 id="lowTitle">IGREJAS ABAIXO DE 50% DE FREQUÊNCIA</h2>
+          <p>Frequência consolidada da EBD por igreja, com os valores percentuais exibidos.</p>
+        </div>
+        <div class="legend-limit"><span></span> Limite 50%</div>
+      </div>
+      <div class="low-chart-box"><canvas id="lowChart"></canvas></div>
+      <div class="empty-state" id="emptyState" hidden>Nenhuma igreja abaixo de 50% no recorte selecionado.</div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div>▱ &nbsp; Fonte: Sistema de Gestão Igrejas (SGI)</div>
+    <div class="footer-center">Desenvolvido por Carlos M. Kill</div>
+    <div>Área: <strong id="footerArea">TODAS</strong></div>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <script src="./app.js"></script>
+</body>
+</html>
