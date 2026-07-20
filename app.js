@@ -252,6 +252,79 @@ function render(){
   renderLow(rows);
 }
 
+
+async function exportDashboardPDF(){
+  const button = $('downloadPdfBtn');
+  const originalLabel = button.innerHTML;
+  try{
+    button.disabled = true;
+    button.innerHTML = '<span>⌛</span> Gerando PDF';
+    document.body.classList.add('pdf-exporting');
+
+    // Aguarda a estabilização dos gráficos e das fontes antes da captura.
+    if(document.fonts && document.fonts.ready) await document.fonts.ready;
+    await new Promise(resolve => setTimeout(resolve, 350));
+
+    const captureTarget = document.body;
+    const canvas = await html2canvas(captureTarget, {
+      scale: 2,
+      useCORS: true,
+      allowTaint: false,
+      backgroundColor: '#ffffff',
+      scrollX: 0,
+      scrollY: 0,
+      windowWidth: Math.max(document.documentElement.scrollWidth, 1600),
+      windowHeight: document.documentElement.scrollHeight,
+      imageTimeout: 15000,
+      logging: false
+    });
+
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({
+      orientation: 'landscape',
+      unit: 'mm',
+      format: 'a4',
+      compress: true
+    });
+
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
+    const margin = 3;
+    const maxWidth = pageWidth - margin * 2;
+    const maxHeight = pageHeight - margin * 2;
+    const imageRatio = canvas.width / canvas.height;
+    const pageRatio = maxWidth / maxHeight;
+
+    let renderWidth, renderHeight;
+    if(imageRatio > pageRatio){
+      renderWidth = maxWidth;
+      renderHeight = renderWidth / imageRatio;
+    }else{
+      renderHeight = maxHeight;
+      renderWidth = renderHeight * imageRatio;
+    }
+
+    const x = (pageWidth - renderWidth) / 2;
+    const y = (pageHeight - renderHeight) / 2;
+    const imgData = canvas.toDataURL('image/jpeg', 0.96);
+
+    pdf.addImage(imgData, 'JPEG', x, y, renderWidth, renderHeight, undefined, 'FAST');
+
+    const area = $('areaFilter')?.value === 'Todos'
+      ? 'Todas-as-Areas'
+      : String($('areaFilter')?.value || 'Area').replace(/[^\wÀ-ÿ-]+/g,'-');
+    const date = new Date().toISOString().slice(0,10);
+    pdf.save(`Relatorio-EBD-${area}-${date}.pdf`);
+  }catch(error){
+    console.error(error);
+    alert('Não foi possível gerar o PDF. Verifique o console do navegador.');
+  }finally{
+    document.body.classList.remove('pdf-exporting');
+    button.disabled = false;
+    button.innerHTML = originalLabel;
+  }
+}
+
 async function init(){
   try{
     const [frequencyRows, baptismRows] = await Promise.all([
@@ -264,6 +337,7 @@ async function init(){
     if(!FREQ_DATA.length) throw new Error('A base de frequência foi carregada, mas nenhuma linha válida foi encontrada.');
     bootstrapFilters();
     render();
+    $('downloadPdfBtn').addEventListener('click', exportDashboardPDF);
   }catch(error){
     showLoadError(error);
   }

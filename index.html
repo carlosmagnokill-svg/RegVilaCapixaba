@@ -22,9 +22,14 @@
       <img src="./logo_ICM_BRANCO.png" alt="Logo ICM" class="icm-logo" />
       <h1>ESTATÍSTICA FREQUÊNCIA DE EBD</h1>
     </div>
-    <div class="update-block">
-      <span class="calendar-icon">▣</span>
-      <div><small>Atualização</small><strong id="headerUpdate">--/--/----</strong></div>
+    <div class="update-actions">
+      <button id="downloadPdfBtn" class="download-pdf-btn" type="button" title="Baixar relatório em PDF">
+        <span>⇩</span> Baixar relatório
+      </button>
+      <div class="update-block">
+        <span class="calendar-icon">▣</span>
+        <div><small>Atualização</small><strong id="headerUpdate">--/--/----</strong></div>
+      </div>
     </div>
   </header>
 
@@ -113,6 +118,8 @@
   </footer>
 
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
   <script src="./app.js"></script>
 </body>
 </html>

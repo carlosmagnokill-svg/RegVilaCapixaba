@@ -100,3 +100,57 @@ select{border:0;background:transparent;font:500 11px Montserrat,Arial;color:#111
   .chart-panel{min-height:275px}.chart-box{height:225px}
   .footer{height:52px;padding:0 10px;font-size:8px;grid-template-columns:1fr 1fr}.footer-center{display:none}
 }
+
+
+.update-actions{
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap:16px;
+}
+.download-pdf-btn{
+  height:35px;
+  padding:0 14px;
+  border:1px solid rgba(255,255,255,.45);
+  border-radius:6px;
+  background:rgba(255,255,255,.12);
+  color:#fff;
+  font:700 10px Montserrat,Arial,sans-serif;
+  display:flex;
+  align-items:center;
+  gap:7px;
+  cursor:pointer;
+  transition:background .2s ease,transform .2s ease,border-color .2s ease;
+  white-space:nowrap;
+}
+.download-pdf-btn:hover{
+  background:rgba(255,255,255,.22);
+  border-color:#fff;
+  transform:translateY(-1px);
+}
+.download-pdf-btn:disabled{
+  cursor:wait;
+  opacity:.65;
+  transform:none;
+}
+.download-pdf-btn span{font-size:17px;line-height:1}
+
+body.pdf-exporting .download-pdf-btn{display:none!important}
+body.pdf-exporting{padding-bottom:0!important;background:#fff}
+body.pdf-exporting .footer{
+  position:relative!important;
+  left:auto!important;
+  right:auto!important;
+  bottom:auto!important;
+  width:100%!important;
+  margin-top:0!important;
+}
+
+@media (max-width:1050px){
+  .update-actions{margin-left:auto}
+}
+@media (max-width:760px){
+  .download-pdf-btn{padding:0 9px;font-size:0;width:38px}
+  .download-pdf-btn span{font-size:18px}
+  .update-actions{gap:8px}
+}
