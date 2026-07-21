@@ -4,8 +4,8 @@ const pt1 = new Intl.NumberFormat('pt-BR', {minimumFractionDigits:1, maximumFrac
 const pt2 = new Intl.NumberFormat('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
 const MONTHS = ['Todos','Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 const DATA_URLS = {
-  frequencia: './BATISMO.csv',
-  batismos: './FREQUENCIA_EBD.csv'
+  arquivo1: './BATISMO.csv',
+  arquivo2: './FREQUENCIA_EBD.csv'
 };
 
 let FREQ_DATA = [];
@@ -425,21 +425,71 @@ window.exportDashboardPDF = async function exportDashboardPDF(){
   }
 }
 
+
+function datasetHeaderScore(rows, expectedHeaders){
+  if(!Array.isArray(rows) || !rows.length) return 0;
+  const headers = Object.keys(rows[0]).map(normalize);
+  return expectedHeaders.reduce((score, group)=>{
+    return score + (group.some(candidate=>headers.includes(normalize(candidate))) ? 1 : 0);
+  }, 0);
+}
+
+function detectDatasets(firstRows, secondRows){
+  const frequencyHeaders = [
+    ['Data'],
+    ['Área','Area'],
+    ['Pólo','Polo'],
+    ['Igreja'],
+    ['Memb. Total','Memb Total','Membros Total'],
+    ['Presença. Adulto','Presença Adulto','Presenca Adulto'],
+    ['Presença. CIAS','Presença CIAS','Presenca CIAS']
+  ];
+
+  const baptismHeaders = [
+    ['Área','Area'],
+    ['Pólo','Polo'],
+    ['Igreja'],
+    ['B.2025','B2025','Batismos 2025'],
+    ['B.2026','B2026','Batismos 2026']
+  ];
+
+  const ff = datasetHeaderScore(firstRows, frequencyHeaders);
+  const sf = datasetHeaderScore(secondRows, frequencyHeaders);
+  const fb = datasetHeaderScore(firstRows, baptismHeaders);
+  const sb = datasetHeaderScore(secondRows, baptismHeaders);
+
+  return {
+    frequencyRows: ff >= sf ? firstRows : secondRows,
+    baptismRows: fb >= sb ? firstRows : secondRows,
+    diagnostics:{ff,sf,fb,sb}
+  };
+}
+
 async function init(){
   try{
-    const [frequencyRows, baptismRows] = await Promise.all([
-      loadCSV(DATA_URLS.frequencia),
-      loadCSV(DATA_URLS.batismos)
+    const [firstRows, secondRows] = await Promise.all([
+      loadCSV(DATA_URLS.arquivo1),
+      loadCSV(DATA_URLS.arquivo2)
     ]);
-    FREQ_DATA = transformFrequency(frequencyRows);
-    BAPTISM_DATA = transformBaptism(baptismRows);
 
-    if(!FREQ_DATA.length) throw new Error('A base de frequência foi carregada, mas nenhuma linha válida foi encontrada.');
+    const detected = detectDatasets(firstRows, secondRows);
+    FREQ_DATA = transformFrequency(detected.frequencyRows);
+    BAPTISM_DATA = transformBaptism(detected.baptismRows);
+
+    console.info('Diagnóstico das bases:', detected.diagnostics);
+    console.info('Linhas válidas de frequência:', FREQ_DATA.length);
+    console.info('Linhas válidas de batismos:', BAPTISM_DATA.length);
+
+    if(!FREQ_DATA.length){
+      const h1 = firstRows.length ? Object.keys(firstRows[0]).join(' | ') : 'arquivo vazio';
+      const h2 = secondRows.length ? Object.keys(secondRows[0]).join(' | ') : 'arquivo vazio';
+      throw new Error(`Nenhuma linha válida de frequência foi encontrada. Cabeçalhos BATISMO.csv: ${h1}. Cabeçalhos FREQUENCIA_EBD.csv: ${h2}.`);
+    }
+
     bootstrapFilters();
     render();
   }catch(error){
     showLoadError(error);
   }
 }
-
 document.addEventListener('DOMContentLoaded', init);
