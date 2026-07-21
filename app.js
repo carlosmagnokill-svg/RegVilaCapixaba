@@ -371,8 +371,17 @@ function render(){
   const members=latestRows.reduce((s,r)=>s+Number(r.members||0),0);
   const b25=b.reduce((s,r)=>s+Number(r.b2025||0),0), b26=b.reduce((s,r)=>s+Number(r.b2026||0),0);
   const growth=b25?((b26/b25)-1)*100:(b26?100:0);
-  const elapsed=latestDate?Math.max(1,latestDate.getMonth()+1):1;
-  const pace=b25?(((b26/elapsed)/(b25/12))-1)*100:(b26?100:0);
+  // Mesmo cálculo do Google Data Studio / Looker Studio:
+  // (((SUM(B.2026) / DATE_DIFF(CURRENT_DATE(), DATE(YEAR(CURRENT_DATE()),1,1))) * 365) - SUM(B.2025)) / SUM(B.2025)
+  const today = new Date();
+  const currentYear = today.getFullYear();
+  const startOfYearUTC = Date.UTC(currentYear, 0, 1);
+  const currentDateUTC = Date.UTC(currentYear, today.getMonth(), today.getDate());
+  const elapsedDays = Math.max(1, Math.floor((currentDateUTC - startOfYearUTC) / 86400000));
+  const projectedBaptisms2026 = (b26 / elapsedDays) * 365;
+  const pace = b25
+    ? ((projectedBaptisms2026 - b25) / b25) * 100
+    : (b26 ? 100 : 0);
 
   $('overallFrequency').textContent=pt1.format(rate)+'%';
   $('kpiAreas').textContent=ptNumber.format(unique(rows.map(r=>r.area)).length);
