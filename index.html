@@ -7,7 +7,7 @@
   <title>Estatística Frequência de EBD</title>
   <link rel="preconnect" href="https://cdn.jsdelivr.net" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
-  <link rel="stylesheet" href="styles.css?v=1784564246" />
+  <link rel="stylesheet" href="styles.css?v=1784661546" />
 </head>
 <body>
   <header class="topbar">
@@ -55,6 +55,7 @@
         <span class="filter-icon">⌂</span>
         <span class="filter-copy"><small>Igreja</small><select id="churchFilter"></select></span>
       </label>
+      <button id="clearFiltersBtn" class="clear-filters-btn" type="button">LIMPAR FILTROS</button>
     </section>
 
     <section class="summary-grid">
@@ -73,6 +74,7 @@
         <article class="kpi yellow"><span><small>Batismos 2025</small><strong id="kpiB25">0</strong></span><b>◉</b></article>
         <article class="kpi yellow"><span><small>Batismos 2026</small><strong id="kpiB26">0</strong></span><b>◉</b></article>
         <article class="kpi burgundy"><span><small>EBD's Registradas</small><strong id="kpiEbd">0</strong></span><b>▤</b></article>
+        <article class="kpi alert-card"><span><small>Igrejas abaixo de 50%</small><strong id="kpiBelow50">0</strong></span><b>!</b></article>
         <article class="kpi burgundy"><span><small>Pólos</small><strong id="kpiPoles">0</strong></span><b>♟</b></article>
         <article class="kpi burgundy"><span><small>Memb. Total</small><strong id="kpiMembers">0</strong></span><b>♟</b></article>
         <article class="kpi yellow"><span><small>Crescimento Batismos</small><strong id="kpiGrowth">0,00%</strong></span><b>↘</b></article>
@@ -115,6 +117,7 @@
         <div>
           <h2>LISTA COMPLETA DE IGREJAS ABAIXO DE 50% DE FREQUÊNCIA</h2>
           <p>Detalhamento consolidado conforme os filtros selecionados.</p>
+          <div class="table-count-highlight">Total abaixo de 50%: <strong id="lowFrequencyCount">0</strong></div>
         </div>
       </div>
 
@@ -122,6 +125,7 @@
         <table class="low-frequency-table">
           <thead>
             <tr>
+              <th class="index-col">#</th>
               <th>ÁREA</th>
               <th>PÓLO</th>
               <th>IGREJA</th>
@@ -146,6 +150,6 @@
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
-  <script src="./app.js?v=1784660960"></script>
+  <script src="./app.js?v=1784661546"></script>
 </body>
 </html>

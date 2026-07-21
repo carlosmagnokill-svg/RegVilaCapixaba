@@ -96,22 +96,42 @@ function showLoadError(error){
   target.prepend(alert);
 }
 
-function fillSelect(el, options, selected, allLabel='Todos'){
+function fillSelect(el, options, selected='', allLabel='Todos'){
   el.innerHTML = '';
-  const all = document.createElement('option'); all.value='Todos'; all.textContent=allLabel; el.appendChild(all);
-  options.forEach(v=>{ const o=document.createElement('option'); o.value=v; o.textContent=v; el.appendChild(o); });
-  el.value = options.includes(selected) || selected === 'Todos' ? selected : 'Todos';
+
+  const placeholder = document.createElement('option');
+  placeholder.value = '';
+  placeholder.textContent = '';
+  el.appendChild(placeholder);
+
+  const all = document.createElement('option');
+  all.value = 'Todos';
+  all.textContent = allLabel;
+  el.appendChild(all);
+
+  options.forEach(v=>{
+    const o=document.createElement('option');
+    o.value=v;
+    o.textContent=v;
+    el.appendChild(o);
+  });
+
+  el.value = (selected === '' || selected === 'Todos' || options.includes(selected)) ? selected : '';
 }
 
 function bootstrapFilters(){
   const years = unique(FREQ_DATA.map(r=>String(isoDate(r.date).getFullYear())));
-  fillSelect($('yearFilter'), years, years.at(-1) || 'Todos');
-  $('monthFilter').innerHTML = MONTHS.map((m,i)=>`<option value="${i===0?'Todos':i}">${m}</option>`).join('');
-  $('monthFilter').value='Todos';
 
-  const preferredArea = unique(FREQ_DATA.map(r=>r.area)).find(a=>normalize(a).includes('PORTO DE SANTANA')) || 'Todos';
-  fillSelect($('areaFilter'), unique(FREQ_DATA.map(r=>r.area)), preferredArea);
-  refreshDependentFilters();
+  fillSelect($('yearFilter'), years, '');
+  $('monthFilter').innerHTML = [
+    '<option value=""></option>',
+    ...MONTHS.map((m,i)=>`<option value="${i===0?'Todos':i}">${m}</option>`)
+  ].join('');
+  $('monthFilter').value='';
+
+  fillSelect($('areaFilter'), unique(FREQ_DATA.map(r=>r.area)), '');
+  fillSelect($('poloFilter'), [], '');
+  fillSelect($('churchFilter'), [], '');
 
   ['yearFilter','monthFilter','areaFilter','poloFilter','churchFilter'].forEach(id=>{
     $(id).addEventListener('change', ()=>{
@@ -119,37 +139,69 @@ function bootstrapFilters(){
       render();
     });
   });
+
+  $('clearFiltersBtn').addEventListener('click', clearAllFilters);
 }
 
 function refreshDependentFilters(changed){
-  const area = $('areaFilter').value || 'Todos';
-  const currentPolo = $('poloFilter').value || 'Todos';
-  const currentChurch = $('churchFilter').value || 'Todos';
+  const area = $('areaFilter').value || '';
+  const currentPolo = $('poloFilter').value || '';
+  const currentChurch = $('churchFilter').value || '';
+
+  if(!area){
+    fillSelect($('poloFilter'), [], '');
+    fillSelect($('churchFilter'), [], '');
+    return;
+  }
+
   const baseArea = FREQ_DATA.filter(r=>area==='Todos' || r.area===area);
-  fillSelect($('poloFilter'), unique(baseArea.map(r=>r.polo)), changed==='areaFilter'?'Todos':currentPolo);
-  const polo = $('poloFilter').value;
+  fillSelect(
+    $('poloFilter'),
+    unique(baseArea.map(r=>r.polo)),
+    changed==='areaFilter' ? '' : currentPolo
+  );
+
+  const polo = $('poloFilter').value || '';
+  if(!polo){
+    fillSelect($('churchFilter'), [], '');
+    return;
+  }
+
   const basePolo = baseArea.filter(r=>polo==='Todos' || r.polo===polo);
-  fillSelect($('churchFilter'), unique(basePolo.map(r=>r.church)), changed ? 'Todos' : currentChurch);
+  fillSelect(
+    $('churchFilter'),
+    unique(basePolo.map(r=>r.church)),
+    changed ? '' : currentChurch
+  );
+}
+
+function clearAllFilters(){
+  $('yearFilter').value='';
+  $('monthFilter').value='';
+  $('areaFilter').value='';
+  fillSelect($('poloFilter'), [], '');
+  fillSelect($('churchFilter'), [], '');
+  render();
 }
 
 function selectedRows(){
   const year=$('yearFilter').value, month=$('monthFilter').value, area=$('areaFilter').value, polo=$('poloFilter').value, church=$('churchFilter').value;
   return FREQ_DATA.filter(r=>{
     const d=isoDate(r.date);
-    return (year==='Todos'||String(d.getFullYear())===year) &&
-      (month==='Todos'||d.getMonth()+1===Number(month)) &&
-      (area==='Todos'||r.area===area) &&
-      (polo==='Todos'||r.polo===polo) &&
-      (church==='Todos'||r.church===church);
+    return (!year||year==='Todos'||String(d.getFullYear())===year) &&
+      (!month||month==='Todos'||d.getMonth()+1===Number(month)) &&
+      (!area||area==='Todos'||r.area===area) &&
+      (!polo||polo==='Todos'||r.polo===polo) &&
+      (!church||church==='Todos'||r.church===church);
   });
 }
 
 function selectedBaptisms(){
   const area=$('areaFilter').value, polo=$('poloFilter').value, church=$('churchFilter').value;
   return BAPTISM_DATA.filter(r=>
-    (area==='Todos'||normalize(r.area)===normalize(area)) &&
-    (polo==='Todos'||normalize(r.polo)===normalize(polo)) &&
-    (church==='Todos'||normalize(r.church)===normalize(church))
+    (!area||area==='Todos'||normalize(r.area)===normalize(area)) &&
+    (!polo||polo==='Todos'||normalize(r.polo)===normalize(polo)) &&
+    (!church||church==='Todos'||normalize(r.church)===normalize(church))
   );
 }
 
@@ -295,10 +347,12 @@ function renderLowFrequencyTable(rows){
 
   tbody.innerHTML = '';
   empty.hidden = rows.length > 0;
+  $('lowFrequencyCount').textContent = ptNumber.format(rows.length);
 
-  rows.forEach(item=>{
+  rows.forEach((item,index)=>{
     const tr = document.createElement('tr');
     tr.innerHTML = `
+      <td class="index-cell">${index + 1}</td>
       <td>${item.area}</td>
       <td>${item.polo}</td>
       <td>${item.church}</td>
@@ -325,6 +379,16 @@ function render(){
   $('kpiChurches').textContent=ptNumber.format(unique(rows.map(r=>r.church)).length);
   $('kpiPoles').textContent=ptNumber.format(unique(rows.map(r=>r.polo)).length);
   $('kpiEbd').textContent=ptNumber.format(unique(rows.map(r=>r.date)).length);
+  const below50Count = (() => {
+    const grouped = new Map();
+    rows.forEach(r=>{
+      const key=[r.area,r.polo,r.church].join('|||');
+      if(!grouped.has(key)) grouped.set(key,[]);
+      grouped.get(key).push(r);
+    });
+    return [...grouped.values()].filter(group=>weightedRate(group)<50).length;
+  })();
+  $('kpiBelow50').textContent=ptNumber.format(below50Count);
   $('kpiMembers').textContent=ptNumber.format(members);
   $('kpiB25').textContent=ptNumber.format(b25);
   $('kpiB26').textContent=ptNumber.format(b26);
@@ -334,8 +398,8 @@ function render(){
   $('kpiUpdate').textContent=dateLabel.length===10?`${dateLabel.slice(0,6)}${dateLabel.slice(-2)}`:dateLabel;
   $('headerUpdate').textContent=dateLabel;
   const area=$('areaFilter').value;
-  $('footerArea').textContent=area==='Todos'?'TODAS':area.replace(' - ES','');
-  $('lowTitle').textContent=`IGREJAS ${area==='Todos'?'':`DA ÁREA ${area.replace(' - ES','')} `}ABAIXO DE 50% DE FREQUÊNCIA`;
+  $('footerArea').textContent=(!area||area==='Todos')?'TODAS':area.replace(' - ES','');
+  $('lowTitle').textContent=`IGREJAS ${(!area||area==='Todos')?'':`DA ÁREA ${area.replace(' - ES','')} `}ABAIXO DE 50% DE FREQUÊNCIA`;
 
   renderGauge(rate);
   renderMonthly(rows);

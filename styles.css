@@ -247,3 +247,96 @@ body.pdf-exporting .footer{
 @media (max-width:760px){
   .low-chart-box{height:300px}
 }
+
+
+/* Ajustes de filtros, KPI e tabela */
+.filters{
+  grid-template-columns:.8fr .8fr 1fr .85fr 1.15fr auto;
+  align-items:stretch;
+}
+.clear-filters-btn{
+  min-width:126px;
+  border:0;
+  border-radius:6px;
+  background:#001c3c;
+  color:#fff;
+  font:800 10px Montserrat,Arial,sans-serif;
+  cursor:pointer;
+  box-shadow:0 2px 5px rgba(23,35,55,.12);
+  transition:transform .2s ease,background .2s ease;
+}
+.clear-filters-btn:hover{
+  background:#062a56;
+  transform:translateY(-1px);
+}
+
+.kpi-grid{
+  grid-template-columns:repeat(6,1fr);
+}
+.kpi.alert-card{
+  background:linear-gradient(135deg,#d90916,#a9000f);
+  color:#fff;
+}
+.kpi.alert-card b{
+  width:28px;
+  height:28px;
+  border-radius:50%;
+  display:grid;
+  place-items:center;
+  border:2px solid rgba(255,255,255,.85);
+  font-size:18px;
+}
+
+.analysis-row{
+  grid-template-columns:13% 43% 1fr;
+}
+.narrative-card{
+  min-height:268px;
+  padding:16px 12px 14px;
+}
+.narrative-card p{
+  font-size:12px;
+  line-height:1.7;
+}
+
+.table-count-highlight{
+  margin:7px 4px 0;
+  color:#b00012;
+  font-size:11px;
+  font-weight:700;
+}
+.table-count-highlight strong{
+  display:inline-flex;
+  min-width:28px;
+  height:22px;
+  padding:0 7px;
+  align-items:center;
+  justify-content:center;
+  border-radius:12px;
+  background:#b00012;
+  color:#fff;
+  margin-left:4px;
+}
+.index-col,
+.index-cell{
+  width:48px;
+  text-align:center!important;
+}
+.index-cell{
+  font-weight:800;
+  color:#001c3c;
+}
+
+@media (max-width:1200px){
+  .filters{grid-template-columns:repeat(3,1fr)}
+  .clear-filters-btn{height:53px}
+  .kpi-grid{grid-template-columns:repeat(4,1fr)}
+  .analysis-row{grid-template-columns:180px 1fr}
+}
+@media (max-width:760px){
+  .filters{grid-template-columns:1fr 1fr}
+  .clear-filters-btn{grid-column:1/-1;height:46px}
+  .kpi-grid{grid-template-columns:1fr 1fr}
+  .analysis-row{grid-template-columns:1fr}
+  .narrative-card{min-height:auto}
+}
