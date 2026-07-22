@@ -1,3 +1,55 @@
+
+const AUTH_CONFIG={csvUrl:'./acesso.csv',maxAttempts:5,lockMinutes:3,attemptsKey:'ebdAuthAttempts',lockUntilKey:'ebdAuthLockUntil',sessionKey:'ebdAuthenticated'};
+let AUTH_RECORD=null,lockTimer=null;
+function b64ToBytes(v){const b=atob(v);return Uint8Array.from(b,c=>c.charCodeAt(0))}
+function bytesToB64(bytes){let b='';bytes.forEach(x=>b+=String.fromCharCode(x));return btoa(b)}
+async function deriveHash(password,salt,iterations){
+  const key=await crypto.subtle.importKey('raw',new TextEncoder().encode(password),'PBKDF2',false,['deriveBits']);
+  const bits=await crypto.subtle.deriveBits({name:'PBKDF2',hash:'SHA-256',salt:b64ToBytes(salt),iterations:Number(iterations)},key,256);
+  return bytesToB64(new Uint8Array(bits));
+}
+function safeEqual(a,b){if(a.length!==b.length)return false;let r=0;for(let i=0;i<a.length;i++)r|=a.charCodeAt(i)^b.charCodeAt(i);return r===0}
+function getAttempts(){return Number(localStorage.getItem(AUTH_CONFIG.attemptsKey)||0)}
+function setAttempts(v){localStorage.setItem(AUTH_CONFIG.attemptsKey,String(v))}
+function getLockUntil(){return Number(localStorage.getItem(AUTH_CONFIG.lockUntilKey)||0)}
+function updateAttempts(){document.getElementById('attemptsInfo').textContent=`Tentativas restantes: ${Math.max(0,AUTH_CONFIG.maxAttempts-getAttempts())}`}
+function formatCountdown(ms){const t=Math.max(0,Math.ceil(ms/1000));return `${String(Math.floor(t/60)).padStart(2,'0')}:${String(t%60).padStart(2,'0')}`}
+function clearLock(){localStorage.removeItem(AUTH_CONFIG.lockUntilKey);setAttempts(0)}
+function applyLock(){
+  const remain=getLockUntil()-Date.now(),input=document.getElementById('passwordInput'),btn=document.getElementById('loginBtn'),msg=document.getElementById('loginMessage');
+  if(remain<=0){clearLock();input.disabled=false;btn.disabled=false;msg.textContent='';updateAttempts();if(lockTimer)clearInterval(lockTimer);return false}
+  input.disabled=true;btn.disabled=true;msg.className='login-message error';msg.textContent=`Acesso bloqueado. Tente novamente em ${formatCountdown(remain)}.`;document.getElementById('attemptsInfo').textContent='Tentativas esgotadas';
+  if(!lockTimer)lockTimer=setInterval(applyLock,1000);return true;
+}
+function unlock(){sessionStorage.setItem(AUTH_CONFIG.sessionKey,'1');document.body.classList.add('authenticated');document.getElementById('loginOverlay').style.display='none'}
+async function loadAuth(){
+  const r=await fetch(AUTH_CONFIG.csvUrl,{cache:'no-store'});if(!r.ok)throw new Error(`HTTP ${r.status}`);
+  const t=await r.text();const p=Papa.parse(t,{header:true,skipEmptyLines:true});const row=p.data.find(x=>String(x.usuario||'').trim()==='dashboard')||p.data[0];
+  if(!row?.salt||!row?.hash||!row?.iteracoes)throw new Error('acesso.csv inválido');AUTH_RECORD=row;
+}
+async function handleLogin(){
+  if(applyLock())return;
+  const input=document.getElementById('passwordInput'),btn=document.getElementById('loginBtn'),msg=document.getElementById('loginMessage');
+  if(!input.value){msg.className='login-message error';msg.textContent='Digite a senha.';return}
+  btn.disabled=true;msg.className='login-message';msg.textContent='Validando...';
+  try{
+    const candidate=await deriveHash(input.value,AUTH_RECORD.salt,AUTH_RECORD.iteracoes);
+    if(safeEqual(candidate,AUTH_RECORD.hash)){clearLock();msg.className='login-message success';msg.textContent='Acesso autorizado.';setTimeout(unlock,250);return}
+    const attempts=getAttempts()+1;setAttempts(attempts);
+    if(attempts>=AUTH_CONFIG.maxAttempts){localStorage.setItem(AUTH_CONFIG.lockUntilKey,String(Date.now()+AUTH_CONFIG.lockMinutes*60000));applyLock()}
+    else{msg.className='login-message error';msg.textContent='Senha incorreta.';btn.disabled=false;input.select();updateAttempts()}
+  }catch(e){console.error(e);msg.className='login-message error';msg.textContent='Falha ao validar o acesso.';btn.disabled=false}
+}
+async function initAuth(){
+  if(sessionStorage.getItem(AUTH_CONFIG.sessionKey)==='1'){unlock();return}
+  try{
+    await loadAuth();updateAttempts();applyLock();
+    document.getElementById('loginBtn').addEventListener('click',handleLogin);
+    document.getElementById('passwordInput').addEventListener('keydown',e=>{if(e.key==='Enter')handleLogin()});
+    document.getElementById('togglePasswordBtn').addEventListener('click',()=>{const i=document.getElementById('passwordInput');i.type=i.type==='password'?'text':'password'});
+  }catch(e){console.error(e);const m=document.getElementById('loginMessage');m.className='login-message error';m.textContent='Não foi possível carregar a configuração de acesso.';document.getElementById('loginBtn').disabled=true}
+}
+
 const $ = (id) => document.getElementById(id);
 const ptNumber = new Intl.NumberFormat('pt-BR');
 const pt1 = new Intl.NumberFormat('pt-BR', {minimumFractionDigits:1, maximumFractionDigits:1});
@@ -565,4 +617,4 @@ async function init(){
     showLoadError(error);
   }
 }
-document.addEventListener('DOMContentLoaded', init);
+document.addEventListener('DOMContentLoaded',async()=>{await initAuth();init();});

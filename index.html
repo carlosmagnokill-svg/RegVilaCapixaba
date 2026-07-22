@@ -7,10 +7,27 @@
   <title>Estatística Frequência de EBD</title>
   <link rel="preconnect" href="https://cdn.jsdelivr.net" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
-  <link rel="stylesheet" href="styles.css?v=1784661546" />
+  <link rel="stylesheet" href="styles.css?v=1784738141" />
 </head>
 <body>
-  <header class="topbar">
+
+  <div id="loginOverlay" class="login-overlay">
+    <div class="login-card">
+      <img src="./logo_ICM_BRANCO.png" alt="Logo ICM" class="login-logo">
+      <h2>Acesso ao Dashboard</h2>
+      <p>Informe a senha para continuar.</p>
+      <div class="password-field">
+        <input id="passwordInput" type="password" placeholder="Senha de acesso" autocomplete="current-password">
+        <button id="togglePasswordBtn" type="button">◉</button>
+      </div>
+      <button id="loginBtn" class="login-btn" type="button">ENTRAR</button>
+      <div id="loginMessage" class="login-message"></div>
+      <div id="attemptsInfo" class="attempts-info">Tentativas restantes: 5</div>
+    </div>
+  </div>
+
+  <div id="protectedContent" class="protected-content">
+<header class="topbar">
     <div class="brand-block">
       <div class="pin-mark" aria-hidden="true">●</div>
       <div>
@@ -146,10 +163,11 @@
     <div class="footer-center">Desenvolvido por Carlos M. Kill</div>
     <div>Área: <strong id="footerArea">TODAS</strong></div>
   </footer>
+</div>
 
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
-  <script src="./app.js?v=1784662093"></script>
+  <script src="./app.js?v=1784738141"></script>
 </body>
 </html>
