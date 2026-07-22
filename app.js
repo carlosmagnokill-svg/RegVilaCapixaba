@@ -14,12 +14,44 @@ function setAttempts(v){localStorage.setItem(AUTH_CONFIG.attemptsKey,String(v))}
 function getLockUntil(){return Number(localStorage.getItem(AUTH_CONFIG.lockUntilKey)||0)}
 function updateAttempts(){document.getElementById('attemptsInfo').textContent=`Tentativas restantes: ${Math.max(0,AUTH_CONFIG.maxAttempts-getAttempts())}`}
 function formatCountdown(ms){const t=Math.max(0,Math.ceil(ms/1000));return `${String(Math.floor(t/60)).padStart(2,'0')}:${String(t%60).padStart(2,'0')}`}
-function clearLock(){localStorage.removeItem(AUTH_CONFIG.lockUntilKey);setAttempts(0)}
+function clearLock(){localStorage.removeItem(AUTH_CONFIG.lockUntilKey);setAttempts(0);if(lockTimer){clearInterval(lockTimer);lockTimer=null}}
 function applyLock(){
-  const remain=getLockUntil()-Date.now(),input=document.getElementById('passwordInput'),btn=document.getElementById('loginBtn'),msg=document.getElementById('loginMessage');
-  if(remain<=0){clearLock();input.disabled=false;btn.disabled=false;msg.textContent='';updateAttempts();if(lockTimer)clearInterval(lockTimer);return false}
-  input.disabled=true;btn.disabled=true;msg.className='login-message error';msg.textContent=`Acesso bloqueado. Tente novamente em ${formatCountdown(remain)}.`;document.getElementById('attemptsInfo').textContent='Tentativas esgotadas';
-  if(!lockTimer)lockTimer=setInterval(applyLock,1000);return true;
+  const lockUntil=getLockUntil();
+  const remain=lockUntil-Date.now();
+  const input=document.getElementById('passwordInput');
+  const btn=document.getElementById('loginBtn');
+  const msg=document.getElementById('loginMessage');
+
+  // Não existe bloqueio ativo: mantém a contagem atual de tentativas.
+  if(!lockUntil){
+    input.disabled=false;
+    btn.disabled=false;
+    updateAttempts();
+    return false;
+  }
+
+  // O bloqueio existia e acabou: só então zera as tentativas.
+  if(remain<=0){
+    clearLock();
+    input.disabled=false;
+    btn.disabled=false;
+    msg.textContent='';
+    updateAttempts();
+    if(lockTimer){
+      clearInterval(lockTimer);
+      lockTimer=null;
+    }
+    return false;
+  }
+
+  input.disabled=true;
+  btn.disabled=true;
+  msg.className='login-message error';
+  msg.textContent=`Acesso bloqueado. Tente novamente em ${formatCountdown(remain)}.`;
+  document.getElementById('attemptsInfo').textContent='Tentativas esgotadas';
+
+  if(!lockTimer) lockTimer=setInterval(applyLock,1000);
+  return true;
 }
 function unlock(){sessionStorage.setItem(AUTH_CONFIG.sessionKey,'1');document.body.classList.add('authenticated');document.getElementById('loginOverlay').style.display='none'}
 async function loadAuth(){
