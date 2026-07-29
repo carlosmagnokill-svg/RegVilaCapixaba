@@ -428,16 +428,22 @@ function renderLow(rows){
 function renderLowFrequencyTable(rows){
   const tbody=$('lowFrequencyTableBody');
   const empty=$('emptyTableState');
+  const showDate=LOW_FREQUENCY_MODE==='latest';
+
   tbody.innerHTML='';
   empty.hidden=rows.length>0;
   $('lowFrequencyCount').textContent=ptNumber.format(rows.length);
+  $('dateHeader').hidden=!showDate;
 
   rows.forEach((item,index)=>{
     const tr=document.createElement('tr');
-    const dateLabel=LOW_FREQUENCY_MODE==='latest'&&item.date?fmtDate(isoDate(item.date)):'—';
+    const dateCell=showDate && item.date
+      ? `<td class="date-cell">${fmtDate(isoDate(item.date))}</td>`
+      : '';
+
     tr.innerHTML=`
       <td class="index-cell">${index+1}</td>
-      <td class="date-cell">${dateLabel}</td>
+      ${dateCell}
       <td>${item.area}</td>
       <td>${item.polo}</td>
       <td>${item.church}</td>
