@@ -356,3 +356,10 @@ body.authenticated .protected-content{display:block}
 .login-message{min-height:20px;margin-top:12px;font-size:11px;font-weight:700}
 .login-message.error{color:#b00012}.login-message.success{color:#137333}
 .attempts-info{margin-top:5px;color:#6a7280;font-size:10px;font-weight:600}
+
+.low-tabs{display:flex;align-items:center;gap:8px;padding:10px 4px 4px;border-bottom:1px solid #edf0f3}
+.low-tab{height:34px;padding:0 18px;border:1px solid #cfd5dd;border-radius:7px 7px 0 0;background:#f4f6f8;color:#435066;font:800 10px Montserrat,Arial,sans-serif;cursor:pointer}
+.low-tab.active{background:#001c3c;color:#fff;border-color:#001c3c}
+.low-tab-context{margin-left:auto;padding-right:8px;color:#7a8190;font-size:9px;font-weight:600}
+.date-col,.date-cell{width:95px;white-space:nowrap}
+@media(max-width:760px){.low-tabs{flex-wrap:wrap}.low-tab-context{width:100%;margin-left:0}}

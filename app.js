@@ -95,6 +95,7 @@ const DATA_URLS = {
 let FREQ_DATA = [];
 let BAPTISM_DATA = [];
 let charts = {};
+let LOW_FREQUENCY_MODE = 'average';
 
 const normalize = s => String(s ?? '').trim().replace(/\s+/g,' ').toUpperCase();
 const isoDate = s => new Date(`${s}T12:00:00`);
@@ -225,6 +226,8 @@ function bootstrapFilters(){
   });
 
   $('clearFiltersBtn').addEventListener('click', clearAllFilters);
+  $('tabAverage').addEventListener('click',()=>{LOW_FREQUENCY_MODE='average';render();});
+  $('tabLatest').addEventListener('click',()=>{LOW_FREQUENCY_MODE='latest';render();});
 }
 
 function refreshDependentFilters(changed){
@@ -343,32 +346,47 @@ function renderWeekly(rows){
   charts.weekly=new Chart($('weeklyChart'),{type:'bar',plugins:[labelPlugin],data:{labels,datasets:[{label:'% Participação',data:vals,backgroundColor:'#28913e',barPercentage:.62,categoryPercentage:.75}]},options:{responsive:true,maintainAspectRatio:false,layout:{padding:{top:15}},scales:commonScales(Math.max(80,Math.ceil((Math.max(...vals,0)+10)/10)*10)),plugins:{legend:{display:true,position:'bottom',labels:{boxWidth:9,font:{size:9}}},tooltip:{callbacks:{label:c=>pt2.format(c.raw)+'%'}}}}});
 }
 
-function renderLow(rows){
-  const byChurch = new Map();
 
+function buildLowFrequencyRows(rows, mode='average'){
+  const grouped = new Map();
   rows.forEach(r=>{
-    const key = [r.area, r.polo, r.church].join('|||');
-    if(!byChurch.has(key)) byChurch.set(key, []);
-    byChurch.get(key).push(r);
+    const key=[r.area,r.polo,r.church].join('|||');
+    if(!grouped.has(key)) grouped.set(key,[]);
+    grouped.get(key).push(r);
   });
 
-  const allLow = [...byChurch.entries()]
-    .map(([key, values])=>{
-      const [area, polo, church] = key.split('|||');
-      return { area, polo, church, rate: weightedRate(values) };
+  return [...grouped.entries()]
+    .map(([key,values])=>{
+      const [area,polo,church]=key.split('|||');
+      const dates=values.map(v=>v.date).sort((a,b)=>b.localeCompare(a));
+      const latestDate=dates[0]||'';
+      const base = mode==='latest'
+        ? values.filter(v=>v.date===latestDate)
+        : values;
+      return {area,polo,church,date:latestDate,rate:weightedRate(base)};
     })
-    .filter(x=>x.rate < 50)
+    .filter(x=>x.rate<50)
     .sort((a,b)=>a.rate-b.rate || a.church.localeCompare(b.church,'pt-BR'));
+}
 
-  const chartLow = allLow.slice(0,25);
+function updateLowTabs(){
+  const avg=LOW_FREQUENCY_MODE==='average';
+  $('tabAverage').classList.toggle('active',avg);
+  $('tabLatest').classList.toggle('active',!avg);
+  $('lowTabContext').textContent=avg?'Período consolidado':'Última data disponível de cada igreja';
+}
 
-  $('emptyState').hidden = chartLow.length > 0;
-  $('lowChart').style.display = chartLow.length ? 'block' : 'none';
+function renderLow(rows){
+  updateLowTabs();
+  const allLow=buildLowFrequencyRows(rows,LOW_FREQUENCY_MODE);
+  const chartLow=allLow.slice(0,25);
 
+  $('emptyState').hidden=chartLow.length>0;
+  $('lowChart').style.display=chartLow.length?'block':'none';
   destroy('low');
 
   if(chartLow.length){
-    charts.low = new Chart($('lowChart'),{
+    charts.low=new Chart($('lowChart'),{
       type:'bar',
       plugins:[labelPlugin],
       data:{
@@ -385,38 +403,20 @@ function renderLow(rows){
         maintainAspectRatio:false,
         layout:{padding:{top:15}},
         scales:{
-          y:{
-            beginAtZero:true,
-            max:60,
-            grid:{color:'#e7e9ed',borderDash:[2,3]},
-            ticks:{font:{size:8},callback:v=>v+'%'}
-          },
-          x:{
-            grid:{display:false},
-            ticks:{
-              font:{size:8},
-              maxRotation:45,
-              minRotation:45,
-              autoSkip:false,
-              callback:function(v){
-                const l=this.getLabelForValue(v);
-                return l.length>18 ? l.slice(0,17)+'…' : l;
-              }
-            }
-          }
+          y:{beginAtZero:true,max:60,grid:{color:'#e7e9ed',borderDash:[2,3]},ticks:{font:{size:8},callback:v=>v+'%'}},
+          x:{grid:{display:false},ticks:{font:{size:8},maxRotation:45,minRotation:45,autoSkip:false,callback:function(v){const l=this.getLabelForValue(v);return l.length>18?l.slice(0,17)+'…':l}}}
         },
         plugins:{
           legend:{display:false},
-          tooltip:{
-            callbacks:{
-              title:items=>chartLow[items[0].dataIndex].church,
-              label:c=>[
-                `Frequência: ${pt2.format(c.raw)}%`,
-                `Área: ${chartLow[c.dataIndex].area}`,
-                `Pólo: ${chartLow[c.dataIndex].polo}`
-              ]
+          tooltip:{callbacks:{
+            title:items=>chartLow[items[0].dataIndex].church,
+            label:c=>{
+              const item=chartLow[c.dataIndex];
+              const lines=[`Frequência: ${pt2.format(c.raw)}%`,`Área: ${item.area}`,`Pólo: ${item.polo}`];
+              if(LOW_FREQUENCY_MODE==='latest'&&item.date) lines.push(`Data: ${fmtDate(isoDate(item.date))}`);
+              return lines;
             }
-          }
+          }}
         }
       }
     });
@@ -426,17 +426,18 @@ function renderLow(rows){
 }
 
 function renderLowFrequencyTable(rows){
-  const tbody = $('lowFrequencyTableBody');
-  const empty = $('emptyTableState');
-
-  tbody.innerHTML = '';
-  empty.hidden = rows.length > 0;
-  $('lowFrequencyCount').textContent = ptNumber.format(rows.length);
+  const tbody=$('lowFrequencyTableBody');
+  const empty=$('emptyTableState');
+  tbody.innerHTML='';
+  empty.hidden=rows.length>0;
+  $('lowFrequencyCount').textContent=ptNumber.format(rows.length);
 
   rows.forEach((item,index)=>{
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td class="index-cell">${index + 1}</td>
+    const tr=document.createElement('tr');
+    const dateLabel=LOW_FREQUENCY_MODE==='latest'&&item.date?fmtDate(isoDate(item.date)):'—';
+    tr.innerHTML=`
+      <td class="index-cell">${index+1}</td>
+      <td class="date-cell">${dateLabel}</td>
       <td>${item.area}</td>
       <td>${item.polo}</td>
       <td>${item.church}</td>
@@ -472,15 +473,7 @@ function render(){
   $('kpiChurches').textContent=ptNumber.format(unique(rows.map(r=>r.church)).length);
   $('kpiPoles').textContent=ptNumber.format(unique(rows.map(r=>r.polo)).length);
   $('kpiEbd').textContent=ptNumber.format(unique(rows.map(r=>r.date)).length);
-  const below50Count = (() => {
-    const grouped = new Map();
-    rows.forEach(r=>{
-      const key=[r.area,r.polo,r.church].join('|||');
-      if(!grouped.has(key)) grouped.set(key,[]);
-      grouped.get(key).push(r);
-    });
-    return [...grouped.values()].filter(group=>weightedRate(group)<50).length;
-  })();
+  const below50Count = buildLowFrequencyRows(rows, LOW_FREQUENCY_MODE).length;
   $('kpiBelow50').textContent=ptNumber.format(below50Count);
   $('kpiMembers').textContent=ptNumber.format(members);
   $('kpiB25').textContent=ptNumber.format(b25);
@@ -492,7 +485,8 @@ function render(){
   $('headerUpdate').textContent=dateLabel;
   const area=$('areaFilter').value;
   $('footerArea').textContent=(!area||area==='Todos')?'TODAS':area.replace(' - ES','');
-  $('lowTitle').textContent=`IGREJAS ${(!area||area==='Todos')?'':`DA ÁREA ${area.replace(' - ES','')} `}ABAIXO DE 50% DE FREQUÊNCIA`;
+  const modeLabel=LOW_FREQUENCY_MODE==='latest'?'NA ÚLTIMA EBD':'NA MÉDIA GERAL';
+  $('lowTitle').textContent=`IGREJAS ${(!area||area==='Todos')?'':`DA ÁREA ${area.replace(' - ES','')} `}ABAIXO DE 50% — ${modeLabel}`;
 
   renderGauge(rate);
   renderMonthly(rows);
