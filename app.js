@@ -96,6 +96,7 @@ let FREQ_DATA = [];
 let BAPTISM_DATA = [];
 let charts = {};
 let LOW_FREQUENCY_MODE = 'average';
+let ACTIVE_MAIN_PAGE = 'frequency';
 
 const normalize = s => String(s ?? '').trim().replace(/\s+/g,' ').toUpperCase();
 const isoDate = s => new Date(`${s}T12:00:00`);
@@ -453,26 +454,326 @@ function renderLowFrequencyTable(rows){
   });
 }
 
+
+function compareQuantity(value, operator, target){
+  if(!operator || target === '' || target === null || target === undefined) return true;
+
+  const numericValue = Number(value || 0);
+  const numericTarget = Number(target);
+
+  if(!Number.isFinite(numericTarget)) return true;
+
+  switch(operator){
+    case '>': return numericValue > numericTarget;
+    case '<': return numericValue < numericTarget;
+    case '=': return numericValue === numericTarget;
+    case '<=': return numericValue <= numericTarget;
+    case '>=': return numericValue >= numericTarget;
+    default: return true;
+  }
+}
+
+function selectedBaptismPageRows(){
+  const area=$('batAreaFilter').value;
+  const polo=$('batPoloFilter').value;
+  const church=$('batChurchFilter').value;
+  const quantityOperator=$('batQuantityOperator').value;
+  const quantityValue=$('batQuantityValue').value;
+
+  return BAPTISM_DATA.filter(r=>
+    (!area||area==='Todos'||normalize(r.area)===normalize(area)) &&
+    (!polo||polo==='Todos'||normalize(r.polo)===normalize(polo)) &&
+    (!church||church==='Todos'||normalize(r.church)===normalize(church)) &&
+    compareQuantity(r.b2026, quantityOperator, quantityValue)
+  );
+}
+
+function refreshBaptismDependentFilters(changed){
+  const area=$('batAreaFilter').value||'';
+  const currentPolo=$('batPoloFilter').value||'';
+  const currentChurch=$('batChurchFilter').value||'';
+
+  if(!area){
+    fillSelect($('batPoloFilter'),[],'');
+    fillSelect($('batChurchFilter'),[],'');
+    return;
+  }
+
+  const areaRows=BAPTISM_DATA.filter(r=>area==='Todos'||r.area===area);
+  fillSelect(
+    $('batPoloFilter'),
+    unique(areaRows.map(r=>r.polo)),
+    changed==='area'?'':currentPolo
+  );
+
+  const polo=$('batPoloFilter').value||'';
+  if(!polo){
+    fillSelect($('batChurchFilter'),[],'');
+    return;
+  }
+
+  const poloRows=areaRows.filter(r=>polo==='Todos'||r.polo===polo);
+  fillSelect(
+    $('batChurchFilter'),
+    unique(poloRows.map(r=>r.church)),
+    changed?'':currentChurch
+  );
+}
+
+function clearBaptismFilters(){
+  $('batAreaFilter').value='';
+  fillSelect($('batPoloFilter'),[],'');
+  fillSelect($('batChurchFilter'),[],'');
+  $('batQuantityOperator').value='';
+  $('batQuantityValue').value='';
+  renderBaptism();
+}
+
+function bootstrapBaptismFilters(){
+  fillSelect($('batAreaFilter'),unique(BAPTISM_DATA.map(r=>r.area)),'');
+  fillSelect($('batPoloFilter'),[],'');
+  fillSelect($('batChurchFilter'),[],'');
+
+  $('batAreaFilter').addEventListener('change',()=>{
+    refreshBaptismDependentFilters('area');
+    renderBaptism();
+  });
+  $('batPoloFilter').addEventListener('change',()=>{
+    refreshBaptismDependentFilters('polo');
+    renderBaptism();
+  });
+  $('batChurchFilter').addEventListener('change',renderBaptism);
+  $('batQuantityOperator').addEventListener('change',renderBaptism);
+  $('batQuantityValue').addEventListener('input',renderBaptism);
+  $('batClearFiltersBtn').addEventListener('click',clearBaptismFilters);
+}
+
+function calculateBaptismPace(b25,b26){
+  const today=new Date();
+  const year=today.getFullYear();
+  const elapsedDays=Math.max(
+    1,
+    Math.floor(
+      (Date.UTC(year,today.getMonth(),today.getDate())-Date.UTC(year,0,1))/86400000
+    )
+  );
+  const projected=(b26/elapsedDays)*365;
+  return b25 ? ((projected-b25)/b25)*100 : (b26?100:0);
+}
+
+function groupBaptisms(rows,field){
+  const map=new Map();
+  rows.forEach(r=>{
+    const key=r[field]||'Não informado';
+    if(!map.has(key)) map.set(key,{b2025:0,b2026:0,members:0,visitors:0,total:0});
+    const item=map.get(key);
+    item.b2025+=Number(r.b2025||0);
+    item.b2026+=Number(r.b2026||0);
+    item.members+=Number(r.m2026||0);
+    item.visitors+=Number(r.v2026||0);
+    item.total+=Number(r.tg2026||0);
+  });
+  return [...map.entries()].map(([label,values])=>({label,...values}));
+}
+
+function renderBaptismAreaChart(rows){
+  const data=groupBaptisms(rows,'area').sort((a,b)=>b.b2026-a.b2026);
+  destroy('baptismArea');
+  charts.baptismArea=new Chart($('baptismAreaChart'),{
+    type:'bar',
+    data:{
+      labels:data.map(x=>x.label.replace(' - ES','')),
+      datasets:[
+        {label:'2025',data:data.map(x=>x.b2025),backgroundColor:'#85000c'},
+        {label:'2026',data:data.map(x=>x.b2026),backgroundColor:'#ffc52f'}
+      ]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      scales:{
+        y:{beginAtZero:true,grid:{color:'#e7e9ed'},ticks:{font:{size:9}}},
+        x:{grid:{display:false},ticks:{font:{size:8},maxRotation:25,minRotation:0}}
+      },
+      plugins:{legend:{position:'bottom',labels:{boxWidth:10,font:{size:9}}}}
+    }
+  });
+}
+
+function renderBaptismPoloChart(rows){
+  const data=groupBaptisms(rows,'polo').sort((a,b)=>b.b2026-a.b2026).slice(0,12);
+  destroy('baptismPolo');
+  charts.baptismPolo=new Chart($('baptismPoloChart'),{
+    type:'bar',
+    data:{labels:data.map(x=>x.label.replace(' - ES','')),datasets:[{data:data.map(x=>x.b2026),backgroundColor:'#2869b5'}]},
+    options:{
+      indexAxis:'y',responsive:true,maintainAspectRatio:false,
+      scales:{
+        x:{beginAtZero:true,grid:{color:'#e7e9ed'},ticks:{font:{size:9}}},
+        y:{grid:{display:false},ticks:{font:{size:8}}}
+      },
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`${c.raw} batismos`}}}
+    }
+  });
+}
+
+function renderBaptismChurchChart(rows){
+  const data=[...rows]
+    .sort((a,b)=>b.b2026-a.b2026||a.church.localeCompare(b.church,'pt-BR'))
+    .slice(0,15);
+
+  destroy('baptismChurch');
+  charts.baptismChurch=new Chart($('baptismChurchChart'),{
+    type:'bar',
+    data:{labels:data.map(x=>x.church),datasets:[{data:data.map(x=>x.b2026),backgroundColor:'#28913e'}]},
+    options:{
+      indexAxis:'y',responsive:true,maintainAspectRatio:false,
+      scales:{
+        x:{beginAtZero:true,grid:{color:'#e7e9ed'},ticks:{font:{size:9}}},
+        y:{grid:{display:false},ticks:{font:{size:8},callback:function(v){const l=this.getLabelForValue(v);return l.length>28?l.slice(0,27)+'…':l}}}
+      },
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`${c.raw} batismos`}}}
+    }
+  });
+}
+
+function renderBaptismShareChart(rows){
+  const data=groupBaptisms(rows,'area').filter(x=>x.b2026>0).sort((a,b)=>b.b2026-a.b2026);
+  destroy('baptismShare');
+  charts.baptismShare=new Chart($('baptismShareChart'),{
+    type:'doughnut',
+    data:{
+      labels:data.map(x=>x.label.replace(' - ES','')),
+      datasets:[{data:data.map(x=>x.b2026),backgroundColor:['#85000c','#ffc52f','#2869b5','#28913e','#d90916','#687182'],borderWidth:2,borderColor:'#fff'}]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,cutout:'58%',
+      plugins:{
+        legend:{position:'right',labels:{boxWidth:10,font:{size:9}}},
+        tooltip:{callbacks:{label:c=>{
+          const total=c.dataset.data.reduce((s,v)=>s+v,0);
+          const pct=total?c.raw/total*100:0;
+          return `${c.label}: ${c.raw} (${pt1.format(pct)}%)`;
+        }}}
+      }
+    }
+  });
+}
+
+function renderBaptismTable(rows){
+  const tbody=$('baptismTableBody');
+  const empty=$('baptismEmptyState');
+  const sorted=[...rows].sort((a,b)=>b.b2026-a.b2026||a.church.localeCompare(b.church,'pt-BR'));
+
+  tbody.innerHTML='';
+  empty.hidden=sorted.length>0;
+  $('baptismTableCount').textContent=ptNumber.format(sorted.length);
+
+  sorted.forEach((item,index)=>{
+    const growth=item.b2025
+      ? ((item.b2026/item.b2025)-1)*100
+      : (item.b2026?100:0);
+
+    const tr=document.createElement('tr');
+    tr.innerHTML=`
+      <td class="index-cell">${index+1}</td>
+      <td>${item.area}</td>
+      <td>${item.polo}</td>
+      <td>${item.church}</td>
+      <td>${ptNumber.format(item.b2025)}</td>
+      <td class="baptism-value">${ptNumber.format(item.b2026)}</td>
+      <td class="${growth>=0?'positive-cell':'negative-cell'}">${pt2.format(growth)}%</td>
+      <td>${ptNumber.format(item.m2026)}</td>
+      <td>${ptNumber.format(item.v2026)}</td>
+      <td>${ptNumber.format(item.tg2026)}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function renderBaptismNarrative(rows,b25,b26,growth,withBaptism,withoutBaptism){
+  const areaRanking=groupBaptisms(rows,'area').sort((a,b)=>b.b2026-a.b2026);
+  const leader=areaRanking[0];
+  const trend=growth>=0?'crescimento':'redução';
+  const leaderText=leader
+    ? `${leader.label.replace(' - ES','')} lidera com ${ptNumber.format(leader.b2026)} batismos.`
+    : 'Não há dados no recorte selecionado.';
+
+  $('baptismNarrative').textContent=
+    `Em 2026 foram registrados ${ptNumber.format(b26)} batismos, `+
+    `uma ${trend} de ${pt2.format(Math.abs(growth))}% sobre 2025. `+
+    `${leaderText} ${ptNumber.format(withBaptism)} igrejas registraram batismos e `+
+    `${ptNumber.format(withoutBaptism)} ainda estão sem registro.`;
+}
+
+function renderBaptism(){
+  const rows=selectedBaptismPageRows();
+  const b25=rows.reduce((s,r)=>s+Number(r.b2025||0),0);
+  const b26=rows.reduce((s,r)=>s+Number(r.b2026||0),0);
+  const members=rows.reduce((s,r)=>s+Number(r.m2026||0),0);
+  const visitors=rows.reduce((s,r)=>s+Number(r.v2026||0),0);
+  const total=rows.reduce((s,r)=>s+Number(r.tg2026||0),0);
+  const growth=b25?((b26/b25)-1)*100:(b26?100:0);
+  const pace=calculateBaptismPace(b25,b26);
+  const withBaptism=rows.filter(r=>Number(r.b2026||0)>0).length;
+  const withoutBaptism=rows.filter(r=>Number(r.b2026||0)===0).length;
+
+  $('batKpiB25').textContent=ptNumber.format(b25);
+  $('batKpiB26').textContent=ptNumber.format(b26);
+  $('batKpiGrowth').textContent=pt2.format(growth)+'%';
+  $('batKpiPace').textContent=pt2.format(pace)+'%';
+  $('batKpiWith').textContent=ptNumber.format(withBaptism);
+  $('batKpiWithout').textContent=ptNumber.format(withoutBaptism);
+  $('batKpiMembers').textContent=ptNumber.format(members);
+  $('batKpiVisitors').textContent=ptNumber.format(visitors);
+  $('batKpiTotal').textContent=ptNumber.format(total);
+
+  renderBaptismNarrative(rows,b25,b26,growth,withBaptism,withoutBaptism);
+  renderBaptismAreaChart(rows);
+  renderBaptismPoloChart(rows);
+  renderBaptismChurchChart(rows);
+  renderBaptismShareChart(rows);
+  renderBaptismTable(rows);
+
+  const area=$('batAreaFilter').value;
+  $('footerArea').textContent=(!area||area==='Todos')?'TODAS':area.replace(' - ES','');
+}
+
+function switchMainPage(page){
+  ACTIVE_MAIN_PAGE=page;
+  const frequency=page==='frequency';
+
+  $('frequencyPage').hidden=!frequency;
+  $('baptismPage').hidden=frequency;
+  $('frequencyPage').classList.toggle('active',frequency);
+  $('baptismPage').classList.toggle('active',!frequency);
+  $('mainTabFrequency').classList.toggle('active',frequency);
+  $('mainTabBaptism').classList.toggle('active',!frequency);
+
+  $('dashboardTitle').textContent=frequency
+    ? 'ESTATÍSTICA FREQUÊNCIA DE EBD'
+    : 'ESTATÍSTICA DE BATISMOS';
+
+  if(frequency){
+    render();
+  }else{
+    renderBaptism();
+  }
+
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function bootstrapMainTabs(){
+  $('mainTabFrequency').addEventListener('click',()=>switchMainPage('frequency'));
+  $('mainTabBaptism').addEventListener('click',()=>switchMainPage('baptism'));
+}
+
 function render(){
-  const rows=selectedRows(), b=selectedBaptisms();
+  const rows=selectedRows();
   const rate=weightedRate(rows);
   const latestDate=rows.length?new Date(Math.max(...rows.map(r=>isoDate(r.date).getTime()))):null;
   const latestISO=latestDate?latestDate.toISOString().slice(0,10):null;
   const latestRows=latestISO?rows.filter(r=>r.date===latestISO):[];
   const members=latestRows.reduce((s,r)=>s+Number(r.members||0),0);
-  const b25=b.reduce((s,r)=>s+Number(r.b2025||0),0), b26=b.reduce((s,r)=>s+Number(r.b2026||0),0);
-  const growth=b25?((b26/b25)-1)*100:(b26?100:0);
-  // Mesmo cálculo do Google Data Studio / Looker Studio:
-  // (((SUM(B.2026) / DATE_DIFF(CURRENT_DATE(), DATE(YEAR(CURRENT_DATE()),1,1))) * 365) - SUM(B.2025)) / SUM(B.2025)
-  const today = new Date();
-  const currentYear = today.getFullYear();
-  const startOfYearUTC = Date.UTC(currentYear, 0, 1);
-  const currentDateUTC = Date.UTC(currentYear, today.getMonth(), today.getDate());
-  const elapsedDays = Math.max(1, Math.floor((currentDateUTC - startOfYearUTC) / 86400000));
-  const projectedBaptisms2026 = (b26 / elapsedDays) * 365;
-  const pace = b25
-    ? ((projectedBaptisms2026 - b25) / b25) * 100
-    : (b26 ? 100 : 0);
 
   $('overallFrequency').textContent=pt1.format(rate)+'%';
   $('kpiAreas').textContent=ptNumber.format(unique(rows.map(r=>r.area)).length);
@@ -482,10 +783,6 @@ function render(){
   const below50Count = buildLowFrequencyRows(rows, LOW_FREQUENCY_MODE).length;
   $('kpiBelow50').textContent=ptNumber.format(below50Count);
   $('kpiMembers').textContent=ptNumber.format(members);
-  $('kpiB25').textContent=ptNumber.format(b25);
-  $('kpiB26').textContent=ptNumber.format(b26);
-  $('kpiGrowth').textContent=pt2.format(growth)+'%';
-  $('kpiPace').textContent=pt2.format(pace)+'%';
   const dateLabel=latestDate?fmtDate(latestDate):'--/--/----';
   $('kpiUpdate').textContent=dateLabel.length===10?`${dateLabel.slice(0,6)}${dateLabel.slice(-2)}`:dateLabel;
   $('headerUpdate').textContent=dateLabel;
@@ -567,9 +864,12 @@ window.exportDashboardPDF = async function exportDashboardPDF(){
 
     pdf.addImage(imgData, 'JPEG', x, y, renderWidth, renderHeight, undefined, 'FAST');
 
-    const area = $('areaFilter')?.value === 'Todos'
+    const activeArea = ACTIVE_MAIN_PAGE === 'baptism'
+      ? $('batAreaFilter')?.value
+      : $('areaFilter')?.value;
+    const area = !activeArea || activeArea === 'Todos'
       ? 'Todas-as-Areas'
-      : String($('areaFilter')?.value || 'Area').replace(/[^\wÀ-ÿ-]+/g,'-');
+      : String(activeArea).replace(/[^\wÀ-ÿ-]+/g,'-');
     const date = new Date().toISOString().slice(0,10);
     pdf.save(`Relatorio-EBD-${area}-${date}.pdf`);
   }catch(error){
@@ -644,6 +944,8 @@ async function init(){
     }
 
     bootstrapFilters();
+    bootstrapBaptismFilters();
+    bootstrapMainTabs();
     render();
   }catch(error){
     showLoadError(error);

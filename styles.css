@@ -363,3 +363,168 @@ body.authenticated .protected-content{display:block}
 .low-tab-context{margin-left:auto;padding-right:8px;color:#7a8190;font-size:9px;font-weight:600}
 .date-col,.date-cell{width:95px;white-space:nowrap}
 @media(max-width:760px){.low-tabs{flex-wrap:wrap}.low-tab-context{width:100%;margin-left:0}}
+
+
+/* Navegação principal */
+.main-tabs{
+  display:flex;
+  gap:8px;
+  padding:10px 25px 0;
+  background:var(--page);
+}
+.main-tab{
+  height:40px;
+  min-width:150px;
+  padding:0 22px;
+  border:1px solid #cfd5dd;
+  border-radius:8px 8px 0 0;
+  background:#fff;
+  color:#435066;
+  font:800 11px Montserrat,Arial,sans-serif;
+  cursor:pointer;
+  box-shadow:0 2px 4px rgba(18,33,54,.06);
+}
+.main-tab span{font-size:15px;margin-right:7px}
+.main-tab.active{
+  background:#001c3c;
+  color:#fff;
+  border-color:#001c3c;
+}
+.main-page[hidden]{display:none!important}
+
+/* Frequência sem cards de batismo */
+#frequencyPage .kpi-grid{
+  grid-template-columns:repeat(4,1fr);
+}
+
+/* Página Batismos */
+.baptism-filters{
+  grid-template-columns:1fr 1fr 1.35fr auto;
+}
+.baptism-kpi-grid{
+  display:grid;
+  grid-template-columns:repeat(5,1fr);
+  gap:10px 12px;
+  margin-bottom:13px;
+}
+.baptism-analysis-grid{
+  display:grid;
+  grid-template-columns:15% 1fr 1fr;
+  gap:12px;
+}
+.baptism-second-row{
+  display:grid;
+  grid-template-columns:1.25fr .75fr;
+  gap:12px;
+  margin-top:12px;
+}
+.baptism-narrative{min-height:292px}
+.baptism-chart-panel{min-height:292px}
+.baptism-chart-box{height:245px}
+.baptism-chart-box.tall{height:310px}
+.baptism-table-panel{
+  margin-top:12px;
+  padding:1px 10px 12px;
+}
+.baptism-value{
+  font-weight:800;
+  color:#85000c;
+}
+.positive-cell{
+  color:#137333;
+  font-weight:800;
+}
+.negative-cell{
+  color:#b00012;
+  font-weight:800;
+}
+.baptism-table th,
+.baptism-table td{
+  white-space:nowrap;
+}
+.baptism-table td:nth-child(4){
+  min-width:230px;
+}
+
+@media(max-width:1200px){
+  .baptism-kpi-grid{grid-template-columns:repeat(3,1fr)}
+  .baptism-analysis-grid{grid-template-columns:190px 1fr}
+  .baptism-analysis-grid .chart-panel:last-child{grid-column:1/-1}
+}
+@media(max-width:760px){
+  .main-tabs{padding:8px 9px 0}
+  .main-tab{min-width:0;flex:1;padding:0 10px}
+  .baptism-filters{grid-template-columns:1fr 1fr}
+  .baptism-filters .filter-wide,
+  .baptism-filters .clear-filters-btn{grid-column:1/-1}
+  .baptism-kpi-grid{grid-template-columns:1fr 1fr}
+  .baptism-analysis-grid,
+  .baptism-second-row{grid-template-columns:1fr}
+  .baptism-analysis-grid .chart-panel:last-child{grid-column:auto}
+  .baptism-chart-panel{min-height:315px}
+  .baptism-chart-box{height:270px}
+}
+
+
+/* Ajustes da aba Batismos */
+.kpi.green-card{
+  background:linear-gradient(135deg,#15803d,#22a447);
+  color:#fff;
+}
+.kpi.green-card b{
+  color:#fff;
+}
+
+.baptism-filters{
+  grid-template-columns:1fr 1fr 1.2fr 1.05fr auto;
+}
+
+.quantity-filter-card{
+  min-width:220px;
+}
+
+.quantity-filter-controls{
+  display:grid;
+  grid-template-columns:74px 1fr;
+  gap:7px;
+  align-items:center;
+}
+
+.quantity-filter-controls select,
+.quantity-filter-controls input{
+  width:100%;
+  height:27px;
+  border:1px solid #dfe3e8;
+  border-radius:5px;
+  background:#fff;
+  padding:0 7px;
+  color:#111827;
+  font:600 10px Montserrat,Arial,sans-serif;
+  outline:none;
+}
+
+.quantity-filter-controls input:focus,
+.quantity-filter-controls select:focus{
+  border-color:#001c3c;
+  box-shadow:0 0 0 2px rgba(0,28,60,.08);
+}
+
+@media(max-width:1200px){
+  .baptism-filters{
+    grid-template-columns:repeat(3,1fr);
+  }
+  .quantity-filter-card{
+    min-width:0;
+  }
+}
+
+@media(max-width:760px){
+  .baptism-filters{
+    grid-template-columns:1fr 1fr;
+  }
+  .quantity-filter-card,
+  .baptism-filters .filter-wide,
+  .baptism-filters .clear-filters-btn{
+    grid-column:1/-1;
+  }
+}

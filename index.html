@@ -7,7 +7,7 @@
   <title>Estatística Frequência de EBD</title>
   <link rel="preconnect" href="https://cdn.jsdelivr.net" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
-  <link rel="stylesheet" href="styles.css?v=1785328632" />
+  <link rel="stylesheet" href="styles.css?v=1785799056" />
 </head>
 <body>
 
@@ -37,7 +37,7 @@
     </div>
     <div class="title-block">
       <img src="./logo_ICM_BRANCO.png" alt="Logo ICM" class="icm-logo" />
-      <h1>ESTATÍSTICA FREQUÊNCIA DE EBD</h1>
+      <h1 id="dashboardTitle">ESTATÍSTICA FREQUÊNCIA DE EBD</h1>
     </div>
     <div class="update-actions">
       <button id="downloadPdfBtn" class="download-pdf-btn" type="button" onclick="exportDashboardPDF()" title="Baixar relatório em PDF">
@@ -50,7 +50,17 @@
     </div>
   </header>
 
+  <nav class="main-tabs" aria-label="Páginas do dashboard">
+    <button id="mainTabFrequency" class="main-tab active" type="button">
+      <span>▥</span> Frequência
+    </button>
+    <button id="mainTabBaptism" class="main-tab" type="button">
+      <span>◉</span> Batismos
+    </button>
+  </nav>
+
   <main class="dashboard-shell">
+    <section id="frequencyPage" class="main-page active">
     <section class="filters" aria-label="Filtros do dashboard">
       <label class="filter-card">
         <span class="filter-icon">▦</span>
@@ -88,14 +98,10 @@
       <div class="kpi-grid">
         <article class="kpi burgundy"><span><small>Áreas</small><strong id="kpiAreas">0</strong></span><b>⌖</b></article>
         <article class="kpi burgundy"><span><small>Igrejas</small><strong id="kpiChurches">0</strong></span><b>♜</b></article>
-        <article class="kpi yellow"><span><small>Batismos 2025</small><strong id="kpiB25">0</strong></span><b>◉</b></article>
-        <article class="kpi yellow"><span><small>Batismos 2026</small><strong id="kpiB26">0</strong></span><b>◉</b></article>
         <article class="kpi burgundy"><span><small>EBD's Registradas</small><strong id="kpiEbd">0</strong></span><b>▤</b></article>
         <article class="kpi alert-card"><span><small>Igrejas abaixo de 50%</small><strong id="kpiBelow50">0</strong></span><b>!</b></article>
         <article class="kpi burgundy"><span><small>Pólos</small><strong id="kpiPoles">0</strong></span><b>♟</b></article>
         <article class="kpi burgundy"><span><small>Memb. Total</small><strong id="kpiMembers">0</strong></span><b>♟</b></article>
-        <article class="kpi yellow"><span><small>Crescimento Batismos</small><strong id="kpiGrowth">0,00%</strong></span><b>↘</b></article>
-        <article class="kpi yellow"><span><small>Ritmo Crescimento</small><strong id="kpiPace">0,00%</strong></span><b>◴</b></article>
         <article class="kpi burgundy"><span><small>Última Atualização</small><strong id="kpiUpdate">--/--/--</strong></span><b>▦</b></article>
       </div>
     </section>
@@ -162,6 +168,122 @@
         </div>
       </div>
     </section>
+
+    </section>
+
+    <section id="baptismPage" class="main-page" hidden>
+      <section class="filters baptism-filters" aria-label="Filtros de batismos">
+        <label class="filter-card">
+          <span class="filter-icon">⌖</span>
+          <span class="filter-copy"><small>Área</small><select id="batAreaFilter"></select></span>
+        </label>
+        <label class="filter-card">
+          <span class="filter-icon">♙</span>
+          <span class="filter-copy"><small>Pólo</small><select id="batPoloFilter"></select></span>
+        </label>
+        <label class="filter-card filter-wide">
+          <span class="filter-icon">⌂</span>
+          <span class="filter-copy"><small>Igreja</small><select id="batChurchFilter"></select></span>
+        </label>
+
+        <div class="filter-card quantity-filter-card">
+          <span class="filter-icon">#</span>
+          <span class="filter-copy">
+            <small>Qtd. de Batismos 2026</small>
+            <span class="quantity-filter-controls">
+              <select id="batQuantityOperator" aria-label="Operador da quantidade de batismos">
+                <option value=""></option>
+                <option value=">">&gt;</option>
+                <option value="<">&lt;</option>
+                <option value="=">=</option>
+                <option value="<=">&lt;=</option>
+                <option value=">=">&gt;=</option>
+              </select>
+              <input id="batQuantityValue" type="number" min="0" step="1" inputmode="numeric" placeholder="Valor">
+            </span>
+          </span>
+        </div>
+
+        <button id="batClearFiltersBtn" class="clear-filters-btn" type="button">LIMPAR FILTROS</button>
+      </section>
+
+      <section class="baptism-kpi-grid">
+        <article class="kpi yellow"><span><small>Batismos 2025</small><strong id="batKpiB25">0</strong></span><b>◉</b></article>
+        <article class="kpi yellow"><span><small>Batismos 2026</small><strong id="batKpiB26">0</strong></span><b>◉</b></article>
+        <article class="kpi yellow"><span><small>Crescimento Batismos</small><strong id="batKpiGrowth">0,00%</strong></span><b>↘</b></article>
+        <article class="kpi yellow"><span><small>Ritmo Crescimento</small><strong id="batKpiPace">0,00%</strong></span><b>◴</b></article>
+        <article class="kpi green-card"><span><small>Igrejas com batismo</small><strong id="batKpiWith">0</strong></span><b>✓</b></article>
+        <article class="kpi alert-card"><span><small>Igrejas sem batismo</small><strong id="batKpiWithout">0</strong></span><b>!</b></article>
+        <article class="kpi burgundy"><span><small>Membros 2026</small><strong id="batKpiMembers">0</strong></span><b>♟</b></article>
+        <article class="kpi burgundy"><span><small>Visitantes 2026</small><strong id="batKpiVisitors">0</strong></span><b>♙</b></article>
+        <article class="kpi burgundy"><span><small>Total Geral 2026</small><strong id="batKpiTotal">0</strong></span><b>Σ</b></article>
+      </section>
+
+      <section class="baptism-analysis-grid">
+        <aside class="narrative-card baptism-narrative">
+          <h2>BATISMOS<br>2026</h2>
+          <div class="gold-line"></div>
+          <div class="circle-icon">◉</div>
+          <p id="baptismNarrative">Acompanhe crescimento, alcance e desempenho por área, pólo e igreja.</p>
+        </aside>
+
+        <article class="panel chart-panel baptism-chart-panel">
+          <h2>COMPARATIVO 2025 × 2026 POR ÁREA</h2>
+          <div class="chart-box baptism-chart-box"><canvas id="baptismAreaChart"></canvas></div>
+        </article>
+
+        <article class="panel chart-panel baptism-chart-panel">
+          <h2>RANKING DE PÓLOS — BATISMOS 2026</h2>
+          <div class="chart-box baptism-chart-box"><canvas id="baptismPoloChart"></canvas></div>
+        </article>
+      </section>
+
+      <section class="baptism-second-row">
+        <article class="panel chart-panel baptism-chart-panel">
+          <h2>TOP 15 IGREJAS — BATISMOS 2026</h2>
+          <div class="chart-box baptism-chart-box tall"><canvas id="baptismChurchChart"></canvas></div>
+        </article>
+
+        <article class="panel chart-panel baptism-chart-panel">
+          <h2>PARTICIPAÇÃO DOS BATISMOS 2026 POR ÁREA</h2>
+          <div class="chart-box baptism-chart-box tall"><canvas id="baptismShareChart"></canvas></div>
+        </article>
+      </section>
+
+      <section class="panel baptism-table-panel">
+        <div class="panel-heading">
+          <div>
+            <h2>DETALHAMENTO DE BATISMOS POR IGREJA</h2>
+            <p>Base consolidada conforme os filtros selecionados.</p>
+            <div class="table-count-highlight">Total de igrejas: <strong id="baptismTableCount">0</strong></div>
+          </div>
+        </div>
+
+        <div class="table-wrap">
+          <table class="low-frequency-table baptism-table">
+            <thead>
+              <tr>
+                <th class="index-col">#</th>
+                <th>ÁREA</th>
+                <th>PÓLO</th>
+                <th>IGREJA</th>
+                <th>B.2025</th>
+                <th>B.2026</th>
+                <th>CRESCIMENTO</th>
+                <th>MEMBROS</th>
+                <th>VISITANTES</th>
+                <th>TOTAL GERAL</th>
+              </tr>
+            </thead>
+            <tbody id="baptismTableBody"></tbody>
+          </table>
+          <div class="empty-table-state" id="baptismEmptyState" hidden>
+            Nenhum registro encontrado para os filtros selecionados.
+          </div>
+        </div>
+      </section>
+    </section>
+
   </main>
 
   <footer class="footer">
@@ -174,6 +296,6 @@
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
-  <script src="./app.js?v=1785328632"></script>
+  <script src="./app.js?v=1785799056"></script>
 </body>
 </html>
